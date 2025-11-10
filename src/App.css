@@ -1,0 +1,1299 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #1a1a2e;
+  color: white;
+  line-height: 1.6;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 2rem;
+  position: relative;
+  overflow-x: auto;
+}
+
+/* Background Elements */
+body::before {
+  content: '';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60vw;
+  height: 60vh;
+  max-width: 800px;
+  max-height: 600px;
+  background-image: url('/hackathon-graphic.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.18;
+  z-index: 0;
+  pointer-events: none;
+}
+
+
+.app {
+  min-height: 100vh;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+
+.app-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #5FF281;
+  position: relative;
+}
+
+.header-center {
+  position: relative;
+  left: 0;
+  top: 0%;
+  transform: translateY(0%);
+}
+
+.header-right {
+  position: relative;
+  left: 3%;
+  top: 0%;
+  transform: translateY(0%);
+}
+
+.app-header h1 {
+  color: #5FF281;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Fixed Hamburger Menu - Independent of header */
+.hamburger-btn-fixed {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  background: rgba(22, 33, 62, 0.9);
+  border: 2px solid #5FF281;
+  cursor: pointer;
+  padding: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  z-index: 1001;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+/* Fixed Notification Bell - Independent of header */
+.notification-bell-fixed {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 1001;
+  backdrop-filter: blur(10px);
+}
+
+/* Fixed Sort Controls - Positioned next to bell */
+.sort-controls-fixed {
+  position: fixed;
+  top: 2rem;
+  right: 6rem; /* Position to the left of the bell */
+  z-index: 1001;
+  backdrop-filter: blur(10px);
+  background: rgba(22, 33, 62, 0.9);
+  border: 2px solid #5FF281;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.hamburger-btn-fixed:hover {
+  background: rgba(95, 242, 129, 0.1);
+  border-color: #4DE269;
+  transform: scale(1.05);
+}
+
+.hamburger-btn-fixed span {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: #5FF281;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn-fixed:hover span {
+  background: #4DE269;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100vh;
+  background: #16213e;
+  border-right: 2px solid #5FF281;
+  transition: left 0.3s ease;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #4a5568;
+}
+
+.sidebar-header h3 {
+  color: #5FF281;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-sidebar-btn {
+  background: transparent;
+  border: none;
+  color: #5FF281;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-sidebar-btn:hover {
+  color: #4DE269;
+}
+
+.sidebar-content {
+  padding: 1rem;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.sidebar-item:hover {
+  background: rgba(95, 242, 129, 0.1);
+  border-color: #5FF281;
+  color: #5FF281;
+}
+
+.sidebar-item.active {
+  background: #5FF281;
+  color: #1a1a2e;
+  border-color: #5FF281;
+}
+
+.sidebar-icon {
+  font-size: 1.2rem;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.sidebar-item .count {
+  margin-left: auto;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sidebar-item.active .count {
+  color: #1a1a2e;
+}
+
+.add-task-btn {
+  background: #5FF281;
+  color: #1a1a2e;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-task-btn:hover {
+  background: #4DE269;
+  transform: translateY(-2px);
+}
+
+.tasks-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  padding: 1rem 0;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  font-size: 1.2rem;
+}
+
+/* Task Item Styles */
+.task-item {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  align-self: start;
+}
+
+.task-item:hover {
+  border-color: #5FF281;
+  transform: translateY(-2px);
+}
+
+.task-item.completed {
+  opacity: 0.7;
+  background: #0f1729;
+}
+
+.task-item.pending-completion {
+  background: #2d4a2d;
+  border-color: #5FF281;
+  animation: pulse 2s infinite;
+}
+
+.task-item.completed-view {
+  background: #0f1729;
+  opacity: 0.8;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(95, 242, 129, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(95, 242, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(95, 242, 129, 0);
+  }
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.task-title-row {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.task-title-row h3 {
+  color: #5FF281;
+  font-size: 1.1rem;
+  margin: 0;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  width: 100%;
+  hyphens: auto;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.task-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+.task-details {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.task-details .deadline {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.task-details .subtask-progress {
+  color: #5FF281;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.task-details .completed-date {
+  color: #4DE269;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.task-details .countdown {
+  color: #ffa500;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.5;
+  }
+}
+
+.strikethrough {
+  text-decoration: line-through;
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.task-actions button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.toggle-subtasks-btn {
+  background: #4a5568;
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.toggle-subtasks-btn:hover {
+  background: #5FF281;
+  color: #1a1a2e;
+}
+
+.add-subtask-btn {
+  background: #5FF281;
+  color: #1a1a2e;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.add-subtask-btn:hover {
+  background: #4DE269;
+}
+
+.edit-btn {
+  background: #3182ce;
+  color: white;
+}
+
+.edit-btn:hover:not(:disabled) {
+  background: #2c5aa0;
+}
+
+.delete-btn {
+  background: #e53e3e;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #c53030;
+}
+
+.task-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Subtask Styles */
+.subtasks-container {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #4a5568;
+}
+
+.subtasks-container h4 {
+  color: #5FF281;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.subtask-item {
+  background: #0f1729;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #4a5568;
+}
+
+.subtask-item.completed {
+  opacity: 0.6;
+}
+
+.subtask-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.subtask-details h4 {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  width: 100%;
+  max-width: 100%;
+  hyphens: auto;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.subtask-details .deadline {
+  color: #888;
+  font-size: 0.8rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.subtask-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.subtask-actions button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Checkbox Styles */
+.checkbox-container {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  height: 1.5rem;
+  width: 1.5rem;
+  background-color: transparent;
+  border: 2px solid #5FF281;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.checkbox-container:hover .checkmark {
+  background-color: rgba(95, 242, 129, 0.1);
+}
+
+.checkbox-container input:checked ~ .checkmark {
+  background-color: #5FF281;
+  border-color: #5FF281;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #1a1a2e;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Form Styles */
+.task-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.task-form {
+  background: #16213e;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 2px solid #5FF281;
+}
+
+.task-form h2 {
+  color: #5FF281;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  color: #e2e8f0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #4a5568;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: white;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #5FF281;
+}
+
+.subtasks-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #0f1729;
+  border-radius: 8px;
+  border: 1px solid #4a5568;
+}
+
+.subtasks-section h3 {
+  color: #5FF281;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.subtask-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #1a1a2e;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.remove-btn {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.remove-btn:hover {
+  background: #c53030;
+}
+
+.add-subtask {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.add-subtask input {
+  flex: 1;
+  min-width: 0;
+  height: 2.75rem;
+}
+
+.add-btn {
+  background: #5FF281;
+  color: #1a1a2e;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.add-btn:hover {
+  background: #4DE269;
+}
+
+.ai-generate-btn {
+  background: #9D4EDD;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+  background: #7B2CBF;
+  transform: translateY(-1px);
+}
+
+.ai-generate-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-error {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid #ff4757;
+  border-radius: 6px;
+  color: #ff4757;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-icon {
+  font-size: 1rem;
+}
+
+/* Subtask editing styles in TaskForm */
+.subtask-content.clickable {
+  cursor: pointer;
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.subtask-content.clickable:hover {
+  background-color: rgba(95, 242, 129, 0.1);
+  color: #5FF281;
+}
+
+.subtask-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.edit-subtask-btn {
+  background: #3182ce;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.edit-subtask-btn:hover {
+  background: #2c5aa0;
+  transform: scale(1.1);
+}
+
+.subtask-edit-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.edit-title-input {
+  flex: 2;
+  min-width: 200px;
+  padding: 0.5rem;
+  border: 2px solid #4a5568;
+  border-radius: 4px;
+  background: #1a1a2e;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.edit-title-input:focus {
+  outline: none;
+  border-color: #5FF281;
+}
+
+.edit-deadline-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.5rem;
+  border: 2px solid #4a5568;
+  border-radius: 4px;
+  background: #1a1a2e;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.edit-deadline-input:focus {
+  outline: none;
+  border-color: #5FF281;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.save-edit-btn {
+  background: #5FF281;
+  color: #1a1a2e;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  min-width: 2rem;
+  transition: all 0.3s ease;
+}
+
+.save-edit-btn:hover:not(:disabled) {
+  background: #4DE269;
+  transform: scale(1.1);
+}
+
+.save-edit-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancel-edit-btn {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  min-width: 2rem;
+  transition: all 0.3s ease;
+}
+
+.cancel-edit-btn:hover {
+  background: #c53030;
+  transform: scale(1.1);
+}
+
+/* Update existing subtask-item to support new layout */
+.subtask-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #1a1a2e;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+}
+
+/* Responsive adjustments for subtask editing */
+@media (max-width: 768px) {
+  .subtask-edit-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .edit-title-input,
+  .edit-deadline-input {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .edit-actions {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.submit-btn {
+  background: #5FF281;
+  color: #1a1a2e;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.submit-btn:hover {
+  background: #4DE269;
+}
+
+.cancel-btn {
+  background: #4a5568;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.cancel-btn:hover {
+  background: #2d3748;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app {
+    padding: 1rem;
+  }
+  
+  /* Adjust background elements for mobile */
+  body::before {
+    width: 80vw;
+    height: 50vh;
+    max-width: 500px;
+    max-height: 400px;
+  }
+  
+  body::after {
+    width: 80px;
+    height: 20px;
+    top: 1rem;
+    right: 1rem;
+  }
+  
+  .app-header::before {
+    width: 60px;
+    height: 15px;
+    top: -6px;
+  }
+  
+  .tasks-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  
+  .app-header {
+    flex-direction: row;
+    gap: 1rem;
+    text-align: left;
+    margin-bottom: 1.5rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .sidebar {
+    width: 280px;
+    left: -280px;
+  }
+  
+  .sidebar-header {
+    padding: 1rem;
+  }
+  
+  .sidebar-header h3 {
+    font-size: 1.3rem;
+  }
+  
+  .sidebar-item {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .hamburger-btn-fixed {
+    top: 1rem;
+    left: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.5rem;
+  }
+  
+  .add-task-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .task-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .task-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .add-subtask {
+    flex-direction: column;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .tasks-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+  
+  .task-item {
+    min-height: 180px;
+    padding: 1rem;
+  }
+}
+
+/* Deadline Color Coding */
+.deadline-warning,
+.task-item.deadline-warning,
+.subtask-item.deadline-warning {
+  background-color: #3d2a00 !important;
+  border-color: #ffa500 !important;
+}
+
+.deadline-warning .deadline,
+.deadline-warning h3,
+.deadline-warning h4 {
+  color: #ffa500 !important;
+}
+
+.deadline-overdue,
+.task-item.deadline-overdue,
+.subtask-item.deadline-overdue {
+  background-color: #4a1a1a !important;
+  border-color: #ff4757 !important;
+}
+
+.deadline-overdue .deadline,
+.deadline-overdue h3,
+.deadline-overdue h4 {
+  color: #ff4757 !important;
+}
+
+/* Sorting Controls */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-controls-fixed .sort-controls {
+  margin: 0;
+}
+
+.sort-label {
+  color: #5FF281;
+  font-size: 0.85rem;
+  margin-right: 0.5rem;
+  font-weight: 500;
+}
+
+.sort-btn {
+  background: #2d3748;
+  color: #e2e8f0;
+  border: 1px solid #4a5568;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  background: #4a5568;
+  border-color: #5FF281;
+  color: #5FF281;
+}
+
+.sort-btn.active {
+  background: #5FF281;
+  color: #1a1a2e;
+  border-color: #5FF281;
+}
+
+/* Header layout update */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Additional responsive styles for new features */
+@media (max-width: 768px) {
+  .sort-controls {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .sort-btn {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  .header-right {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .hamburger-btn-fixed {
+    top: 1rem;
+    left: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.5rem;
+  }
+  
+  .notification-bell-fixed {
+    top: 1rem;
+    right: 1rem;
+  }
+  
+  .sort-controls-fixed {
+    top: 1rem;
+    right: 4.5rem;
+    padding: 0.4rem;
+  }
+  
+  .sort-label {
+    font-size: 0.75rem;
+  }
+  
+  .tasks-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Alert Component Styles */
+.alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.alert-modal {
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.alert-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.alert-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.alert-content {
+  padding: 20px 24px;
+}
+
+.alert-message {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.alert-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 20px;
+  justify-content: center;
+}
+
+.alert-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.alert-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.alert-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.alert-confirm-btn {
+  background: #e53e3e;
+  color: white;
+  border: 1px solid #e53e3e;
+}
+
+.alert-confirm-btn:hover {
+  background: #c53030;
+  border-color: #c53030;
+}
