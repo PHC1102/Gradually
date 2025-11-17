@@ -1,0 +1,325 @@
+/* Task Item Styles */
+.task-item {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  align-self: start;
+}
+
+.task-item:hover {
+  border-color: #5FF281;
+  transform: translateY(-2px);
+}
+
+.task-item.completed {
+  opacity: 0.7;
+  background: #0f1729;
+}
+
+.task-item.pending-completion {
+  background: #2d4a2d;
+  border-color: #5FF281;
+  animation: pulse 2s infinite;
+}
+
+.task-item.completed-view {
+  background: #0f1729;
+  opacity: 0.8;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(95, 242, 129, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(95, 242, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(95, 242, 129, 0);
+  }
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.task-title-row {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.task-title-row h3 {
+  color: #5FF281;
+  font-size: 1.1rem;
+  margin: 0;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  width: 100%;
+  hyphens: auto;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.task-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+.task-details {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.task-details .deadline {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.task-details .subtask-progress {
+  color: #5FF281;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.task-details .completed-date {
+  color: #4DE269;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.task-details .countdown {
+  color: #ffa500;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.5;
+  }
+}
+
+.strikethrough {
+  text-decoration: line-through;
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.task-actions button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.toggle-subtasks-btn {
+  background: #4a5568;
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.toggle-subtasks-btn:hover {
+  background: #5FF281;
+  color: #1a1a2e;
+}
+
+.add-subtask-btn {
+  background: #5FF281;
+  color: #1a1a2e;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.add-subtask-btn:hover {
+  background: #4DE269;
+}
+
+.edit-btn {
+  background: #3182ce;
+  color: white;
+}
+
+.edit-btn:hover:not(:disabled) {
+  background: #2c5aa0;
+}
+
+.delete-btn {
+  background: #e53e3e;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #c53030;
+}
+
+.task-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Subtask Styles */
+.subtasks-container {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #4a5568;
+}
+
+.subtasks-container h4 {
+  color: #5FF281;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.subtask-item {
+  background: #0f1729;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #4a5568;
+}
+
+.subtask-item.completed {
+  opacity: 0.6;
+}
+
+.subtask-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.subtask-details h4 {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  width: 100%;
+  max-width: 100%;
+  hyphens: auto;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.subtask-details .deadline {
+  color: #888;
+  font-size: 0.8rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.subtask-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.subtask-actions button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Deadline Color Coding */
+.deadline-warning,
+.task-item.deadline-warning,
+.subtask-item.deadline-warning {
+  background-color: #3d2a00 !important;
+  border-color: #ffa500 !important;
+}
+
+.deadline-warning .deadline,
+.deadline-warning h3,
+.deadline-warning h4 {
+  color: #ffa500 !important;
+}
+
+.deadline-overdue,
+.task-item.deadline-overdue,
+.subtask-item.deadline-overdue {
+  background-color: #4a1a1a !important;
+  border-color: #ff4757 !important;
+}
+
+.deadline-overdue .deadline,
+.deadline-overdue h3,
+.deadline-overdue h4 {
+  color: #ff4757 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .task-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .task-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-item {
+    min-height: 180px;
+    padding: 1rem;
+  }
+}

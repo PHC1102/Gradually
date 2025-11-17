@@ -12,6 +12,7 @@ export interface Task {
   subtasks: Subtask[];
   done: boolean;
   createdAt?: number; // timestamp when task was created
+  userId?: string; // Firebase user ID
 }
 
 export interface TaskFormData {

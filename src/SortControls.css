@@ -1,0 +1,58 @@
+/* Sorting Controls */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-controls-fixed .sort-controls {
+  margin: 0;
+}
+
+.sort-label {
+  color: #5FF281;
+  font-size: 0.85rem;
+  margin-right: 0.5rem;
+  font-weight: 500;
+}
+
+.sort-btn {
+  background: #2d3748;
+  color: #e2e8f0;
+  border: 1px solid #4a5568;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  background: #4a5568;
+  border-color: #5FF281;
+  color: #5FF281;
+}
+
+.sort-btn.active {
+  background: #5FF281;
+  color: #1a1a2e;
+  border-color: #5FF281;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sort-controls {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .sort-btn {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  .sort-label {
+    font-size: 0.75rem;
+  }
+}

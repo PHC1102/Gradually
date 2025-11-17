@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import './TaskForm.css';
+import './Checkbox.css';
 import type { Task, Subtask, TaskFormData } from './types';
 import { aiService } from './services/aiService';
 
 interface TaskFormProps {
   task?: Task;
-  onSubmit: (task: TaskFormData) => void;
+  onSubmit: (task: TaskFormData) => void | Promise<void>;
   onCancel: () => void;
   isSubtask?: boolean;
 }
@@ -25,15 +27,52 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [newSubtask, setNewSubtask] = useState({ title: '', deadline: '' });
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
+  const [formErrors, setFormErrors] = useState<{title?: string, deadline?: string}>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.title.trim() && formData.deadline) {
+    console.log('TaskForm handleSubmit called with formData:', formData);
+    
+    // Validate form data
+    const errors: {title?: string, deadline?: string} = {};
+    
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    }
+    
+    if (!formData.deadline) {
+      errors.deadline = 'Deadline is required';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      console.log('Form validation failed with errors:', errors);
+      setFormErrors(errors);
+      return;
+    }
+    
+    console.log('Form validation passed, submitting task');
+    // Clear errors if validation passes
+    setFormErrors({});
+    setSubmissionError(null);
+    
+    try {
+      // Call onSubmit synchronously (no await, no timeout)
+      console.log('Calling onSubmit handler');
       onSubmit({
         ...formData,
         subtasks: isSubtask ? undefined : subtasks
       });
+      
+      // If onSubmit returns a promise, ignore it - it will complete in the background
+      console.log('Form submission called successfully');
+    } catch (error) {
+      console.error('Form submission failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit form';
+      console.error('Error message:', errorMessage);
+      setSubmissionError(errorMessage);
+      return;
     }
   };
 
@@ -45,13 +84,17 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         deadline: newSubtask.deadline,
         done: false
       };
-      setSubtasks([...subtasks, subtask]);
+      const updatedSubtasks = [...subtasks, subtask];
+      setSubtasks(updatedSubtasks);
+      setFormData({ ...formData, subtasks: updatedSubtasks });
       setNewSubtask({ title: '', deadline: '' });
     }
   };
 
   const removeSubtask = (id: number) => {
-    setSubtasks(subtasks.filter(st => st.id !== id));
+    const updatedSubtasks = subtasks.filter(st => st.id !== id);
+    setSubtasks(updatedSubtasks);
+    setFormData({ ...formData, subtasks: updatedSubtasks });
   };
 
   const generateAISubtasks = async () => {
@@ -70,7 +113,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       });
 
       // Add generated subtasks to existing ones
-      setSubtasks(prev => [...prev, ...generatedSubtasks]);
+      const updatedSubtasks = [...subtasks, ...generatedSubtasks];
+      setSubtasks(updatedSubtasks);
+      setFormData({ ...formData, subtasks: updatedSubtasks });
     } catch (error) {
       console.error('AI Generation Error:', error);
       setAiError(error instanceof Error ? error.message : 'Failed to generate subtasks');
@@ -85,11 +130,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
   const saveSubtaskEdit = (subtaskId: number, newTitle: string, newDeadline: string) => {
     if (newTitle.trim() && newDeadline) {
-      setSubtasks(prev => prev.map(subtask => 
+      const updatedSubtasks = subtasks.map(subtask => 
         subtask.id === subtaskId 
           ? { ...subtask, title: newTitle.trim(), deadline: newDeadline }
           : subtask
-      ));
+      );
+      setSubtasks(updatedSubtasks);
+      setFormData({ ...formData, subtasks: updatedSubtasks });
     }
     setEditingSubtaskId(null);
   };
@@ -99,7 +146,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <div className="task-form-overlay">
+    <div className="task-form-overlay" onClick={(e) => {
+      // Close form when clicking on the overlay (not on the form itself)
+      if (e.target === e.currentTarget) {
+        onCancel();
+      }
+    }}>
       <div className="task-form">
         <h2>{task ? 'Edit Task' : isSubtask ? 'Add Subtask' : 'Add New Task'}</h2>
         
@@ -110,10 +162,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               type="text"
               id="title"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, title: e.target.value });
+                // Clear error when user starts typing
+                if (formErrors.title) {
+                  setFormErrors({ ...formErrors, title: undefined });
+                }
+              }}
               required
               placeholder="Enter task title"
+              className={formErrors.title ? 'error' : ''}
             />
+            {formErrors.title && <div className="error-message">{formErrors.title}</div>}
           </div>
 
           <div className="form-group">
@@ -122,9 +182,17 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               type="datetime-local"
               id="deadline"
               value={formData.deadline}
-              onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, deadline: e.target.value });
+                // Clear error when user selects a date
+                if (formErrors.deadline) {
+                  setFormErrors({ ...formErrors, deadline: undefined });
+                }
+              }}
               required
+              className={formErrors.deadline ? 'error' : ''}
             />
+            {formErrors.deadline && <div className="error-message">{formErrors.deadline}</div>}
           </div>
 
           {!isSubtask && (
@@ -181,6 +249,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                   {aiError}
                 </div>
               )}
+            </div>
+          )}
+
+          {submissionError && (
+            <div className="ai-error" style={{ marginTop: '15px' }}>
+              <span className="error-icon">❌</span>
+              {submissionError}
             </div>
           )}
 

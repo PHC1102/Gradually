@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import './TaskItem.css';
+import './Checkbox.css';
 import type { Task, Subtask } from './types';
 import { SubtaskItem } from './SubtaskItem';
 import { DateUtils } from './utils/dateUtils';

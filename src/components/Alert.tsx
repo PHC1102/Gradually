@@ -1,4 +1,5 @@
 import React from 'react';
+import '../Alert.css';
 
 interface AlertProps {
   isOpen: boolean;
@@ -8,43 +9,27 @@ interface AlertProps {
   onCancel: () => void;
 }
 
-export function Alert({ isOpen, title, message, onConfirm, onCancel }: AlertProps) {
+export const Alert: React.FC<AlertProps> = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null;
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onCancel();
-    }
-  };
-
   return (
-    <div className="alert-overlay" onClick={handleOverlayClick}>
+    <div className="alert-overlay">
       <div className="alert-modal">
         <div className="alert-header">
-          <h3 className="alert-title">{title}</h3>
+          <h2 className="alert-title">{title}</h2>
         </div>
-        
         <div className="alert-content">
           <p className="alert-message">{message}</p>
         </div>
-        
         <div className="alert-actions">
-          <button 
-            className="alert-btn alert-cancel-btn"
-            onClick={onCancel}
-          >
+          <button className="alert-btn alert-cancel-btn" onClick={onCancel}>
             Cancel
           </button>
-          <button 
-            className="alert-btn alert-confirm-btn"
-            onClick={onConfirm}
-          >
-            Delete
+          <button className="alert-btn alert-confirm-btn" onClick={onConfirm}>
+            Confirm
           </button>
         </div>
       </div>
     </div>
   );
-}
-
-export default Alert;
+};
