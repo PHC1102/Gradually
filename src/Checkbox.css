@@ -50,3 +50,18 @@
 .checkbox-container input:checked ~ .checkmark:after {
   display: block;
 }
+
+/* Disabled checkbox styles */
+.checkbox-container.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-container.disabled .checkmark {
+  border-color: #6b7280;
+  background-color: transparent;
+}
+
+.checkbox-container.disabled:hover .checkmark {
+  background-color: transparent;
+}

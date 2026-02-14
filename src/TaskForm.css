@@ -50,6 +50,29 @@
   font-size: 1rem;
 }
 
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #4a5568;
+  border-radius: 6px;
+  background: #1a1a2e;
+  color: white;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-group.flex {
+  flex: 1;
+  min-width: 180px;
+}
+
 .form-group input:focus {
   outline: none;
   border-color: #5FF281;
@@ -366,4 +389,12 @@
   .form-actions {
     flex-direction: column;
   }
+}
+
+/* Field note for role restrictions */
+.field-note {
+  color: #a0aec0;
+  font-size: 0.75rem;
+  font-style: italic;
+  margin-top: 0.25rem;
 }

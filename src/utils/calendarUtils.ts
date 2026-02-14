@@ -278,12 +278,12 @@ export function formatDisplayDate(date: Date, mode: 'monthly' | 'weekly'): strin
     end.setDate(start.getDate() + 6);
     
     if (start.getMonth() === end.getMonth()) {
-      return `${start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - Week of ${start.getDate()}`;
+      return `${start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - ${end.getDate()}`;
     } else {
       return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${end.getFullYear()}`;
     }
   } else {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   }
 }
 

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './TaskForm.css';
 import './Checkbox.css';
-import type { Task, Subtask, TaskFormData } from './types';
+import type { Task, Subtask, TaskFormData, TaskPriority, TaskStatus } from './types';
 import { aiService } from './services/aiService';
+import { useProjectStore } from './store/projectStore';
+import { useOrganizationStore } from './store/organizationStore';
 
 interface TaskFormProps {
   task?: Task;
@@ -20,7 +22,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [formData, setFormData] = useState<TaskFormData>({
     title: task?.title || '',
     deadline: task?.deadline || '',
-    subtasks: task?.subtasks || []
+    subtasks: task?.subtasks || [],
+    description: task?.description || '',
+    assigneeId: task?.assigneeId,
+    status: task?.status || 'todo',
+    priority: task?.priority || 'medium'
   });
 
   const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks || []);
@@ -30,6 +36,36 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
   const [formErrors, setFormErrors] = useState<{title?: string, deadline?: string}>({});
+  const projectMembers = useProjectStore((state) => state.projectMembers);
+  const currentProjectRole = useProjectStore((state) => state.currentProjectRole);
+  const currentOrgRole = useOrganizationStore((state) => state.currentRole);
+  const memberOptions = useMemo(() => projectMembers ?? [], [projectMembers]);
+  
+  // Determine if user can edit all fields (admin, org owner/admin) or only status (contributor)
+  const canEditAllFields = useMemo(() => {
+    // Org owners and admins can edit everything
+    if (currentOrgRole === 'owner' || currentOrgRole === 'admin') return true;
+    // Project admins can edit everything
+    if (currentProjectRole === 'admin') return true;
+    // Contributors can only edit status
+    return false;
+  }, [currentOrgRole, currentProjectRole]);
+  
+  // For new tasks, everyone with access can create with all fields
+  const isEditing = !!task;
+
+  useEffect(() => {
+    setFormData({
+      title: task?.title || '',
+      deadline: task?.deadline || '',
+      subtasks: task?.subtasks || [],
+      description: task?.description || '',
+      assigneeId: task?.assigneeId,
+      status: task?.status || 'todo',
+      priority: task?.priority || 'medium'
+    });
+    setSubtasks(task?.subtasks || []);
+  }, [task]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,13 +181,37 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     setEditingSubtaskId(null);
   };
 
-  return (
-    <div className="task-form-overlay" onClick={(e) => {
-      // Close form when clicking on the overlay (not on the form itself)
-      if (e.target === e.currentTarget) {
-        onCancel();
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = () => {
+    if (!task) {
+      // New task - check if any field has been filled
+      return formData.title.trim() !== '' || 
+             formData.deadline !== '' || 
+             formData.description !== '' ||
+             subtasks.length > 0;
+    }
+    // Editing - check if anything changed
+    return formData.title !== (task.title || '') ||
+           formData.deadline !== (task.deadline || '') ||
+           formData.description !== (task.description || '') ||
+           formData.status !== (task.status || 'todo') ||
+           formData.priority !== (task.priority || 'medium');
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      if (hasUnsavedChanges()) {
+        const shouldContinue = window.confirm('Do you want to continue creating this task?');
+        if (shouldContinue) {
+          return; // Stay on form
+        }
       }
-    }}>
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="task-form-overlay" onClick={handleOverlayClick}>
       <div className="task-form">
         <h2>{task ? 'Edit Task' : isSubtask ? 'Add Subtask' : 'Add New Task'}</h2>
         
@@ -172,8 +232,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               required
               placeholder="Enter task title"
               className={formErrors.title ? 'error' : ''}
+              disabled={isEditing && !canEditAllFields}
+              style={isEditing && !canEditAllFields ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
             />
             {formErrors.title && <div className="error-message">{formErrors.title}</div>}
+            {isEditing && !canEditAllFields && (
+              <div className="field-note">Only admins can edit title</div>
+            )}
           </div>
 
           <div className="form-group">
@@ -191,17 +256,103 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               }}
               required
               className={formErrors.deadline ? 'error' : ''}
+              disabled={isEditing && !canEditAllFields}
+              style={isEditing && !canEditAllFields ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
             />
             {formErrors.deadline && <div className="error-message">{formErrors.deadline}</div>}
+            {isEditing && !canEditAllFields && (
+              <div className="field-note">Only admins can edit deadline</div>
+            )}
           </div>
+
+          {!isSubtask && (
+            <>
+              <div className="form-group">
+                <label htmlFor="status">Status</label>
+                <select
+                  id="status"
+                  value={formData.status ?? 'todo'}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
+                >
+                  <option value="todo">To Do</option>
+                  <option value="inProgress">In Progress</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group flex">
+                  <label htmlFor="priority">Priority</label>
+                  <select
+                    id="priority"
+                    value={formData.priority ?? 'medium'}
+                    onChange={(e) =>
+                      setFormData({ ...formData, priority: e.target.value as TaskPriority })
+                    }
+                    disabled={isEditing && !canEditAllFields}
+                    style={isEditing && !canEditAllFields ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                  {isEditing && !canEditAllFields && (
+                    <div className="field-note">Only admins can edit</div>
+                  )}
+                </div>
+                <div className="form-group flex">
+                  <label htmlFor="assignee">Assignee</label>
+                  <select
+                    id="assignee"
+                    value={formData.assigneeId ?? ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, assigneeId: e.target.value || undefined })
+                    }
+                    disabled={isEditing && !canEditAllFields}
+                    style={isEditing && !canEditAllFields ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  >
+                    <option value="">Unassigned</option>
+                    {memberOptions.map((member) => (
+                      <option key={member.userId} value={member.userId}>
+                        {member.displayName || member.email || member.userId}
+                      </option>
+                    ))}
+                  </select>
+                  {isEditing && !canEditAllFields && (
+                    <div className="field-note">Only admins can edit</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
+                <textarea
+                  id="description"
+                  rows={4}
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Add details, acceptance criteria..."
+                  disabled={isEditing && !canEditAllFields}
+                  style={isEditing && !canEditAllFields ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                />
+                {isEditing && !canEditAllFields && (
+                  <div className="field-note">Only admins can edit description</div>
+                )}
+              </div>
+            </>
+          )}
 
           {!isSubtask && (
             <div className="subtasks-section">
               <h3>Subtasks</h3>
+              {isEditing && !canEditAllFields && (
+                <div className="field-note" style={{ marginBottom: '0.5rem' }}>Only admins can manage subtasks</div>
+              )}
               
               {subtasks.map((subtask) => (
                 <div key={subtask.id} className="subtask-item">
-                  {editingSubtaskId === subtask.id ? (
+                  {editingSubtaskId === subtask.id && canEditAllFields ? (
                     <SubtaskEditForm 
                       subtask={subtask}
                       onSave={saveSubtaskEdit}
@@ -210,38 +361,41 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                   ) : (
                     <SubtaskDisplay 
                       subtask={subtask}
-                      onEdit={startEditingSubtask}
-                      onRemove={removeSubtask}
+                      onEdit={canEditAllFields || !isEditing ? startEditingSubtask : () => {}}
+                      onRemove={canEditAllFields || !isEditing ? removeSubtask : () => {}}
+                      disabled={isEditing && !canEditAllFields}
                     />
                   )}
                 </div>
               ))}
 
-              <div className="add-subtask">
-                <input
-                  type="text"
-                  value={newSubtask.title}
-                  onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                  placeholder="Subtask title"
-                />
-                <input
-                  type="datetime-local"
-                  value={newSubtask.deadline}
-                  onChange={(e) => setNewSubtask({ ...newSubtask, deadline: e.target.value })}
-                />
-                <button type="button" onClick={addSubtask} className="add-btn">
-                  Add Subtask
-                </button>
-                <button 
-                  type="button" 
-                  onClick={generateAISubtasks} 
-                  className="ai-generate-btn"
-                  disabled={isGeneratingAI || !formData.title.trim() || !formData.deadline}
-                  title="Generate subtasks using AI"
-                >
-                  {isGeneratingAI ? '🤖 Generating...' : '🤖 AI Generate'}
-                </button>
-              </div>
+              {(canEditAllFields || !isEditing) && (
+                <div className="add-subtask">
+                  <input
+                    type="text"
+                    value={newSubtask.title}
+                    onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                    placeholder="Subtask title"
+                  />
+                  <input
+                    type="datetime-local"
+                    value={newSubtask.deadline}
+                    onChange={(e) => setNewSubtask({ ...newSubtask, deadline: e.target.value })}
+                  />
+                  <button type="button" onClick={addSubtask} className="add-btn">
+                    Add Subtask
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={generateAISubtasks} 
+                    className="ai-generate-btn"
+                    disabled={isGeneratingAI || !formData.title.trim() || !formData.deadline}
+                    title="Generate subtasks using AI"
+                  >
+                    {isGeneratingAI ? '🤖 Generating...' : '🤖 AI Generate'}
+                  </button>
+                </div>
+              )}
               
               {aiError && (
                 <div className="ai-error">
@@ -278,35 +432,39 @@ interface SubtaskDisplayProps {
   subtask: Subtask;
   onEdit: (id: number) => void;
   onRemove: (id: number) => void;
+  disabled?: boolean;
 }
 
-function SubtaskDisplay({ subtask, onEdit, onRemove }: SubtaskDisplayProps) {
+function SubtaskDisplay({ subtask, onEdit, onRemove, disabled = false }: SubtaskDisplayProps) {
   return (
     <>
       <span 
-        className="subtask-content clickable"
-        onClick={() => onEdit(subtask.id)}
-        title="Click to edit"
+        className={`subtask-content ${disabled ? '' : 'clickable'}`}
+        onClick={disabled ? undefined : () => onEdit(subtask.id)}
+        title={disabled ? 'View only' : 'Click to edit'}
+        style={disabled ? { opacity: 0.8 } : {}}
       >
         {subtask.title} - {new Date(subtask.deadline).toLocaleString()}
       </span>
-      <div className="subtask-actions">
-        <button 
-          type="button" 
-          onClick={() => onEdit(subtask.id)}
-          className="edit-subtask-btn"
-          title="Edit subtask"
-        >
-          ✏️
-        </button>
-        <button 
-          type="button" 
-          onClick={() => onRemove(subtask.id)}
-          className="remove-btn"
-        >
-          Remove
-        </button>
-      </div>
+      {!disabled && (
+        <div className="subtask-actions">
+          <button 
+            type="button" 
+            onClick={() => onEdit(subtask.id)}
+            className="edit-subtask-btn"
+            title="Edit subtask"
+          >
+            ✏️
+          </button>
+          <button 
+            type="button" 
+            onClick={() => onRemove(subtask.id)}
+            className="remove-btn"
+          >
+            Remove
+          </button>
+        </div>
+      )}
     </>
   );
 }

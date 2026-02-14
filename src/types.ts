@@ -1,3 +1,8 @@
+export type OrgRole = 'owner' | 'admin' | 'member';
+export type ProjectRole = 'admin' | 'contributor' | 'viewer';
+export type TaskStatus = 'todo' | 'inProgress' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
+
 export interface Subtask {
   id: number;
   title: string;
@@ -11,14 +16,27 @@ export interface Task {
   deadline: string;
   subtasks: Subtask[];
   done: boolean;
-  createdAt?: number; // timestamp when task was created
-  userId?: string; // Firebase user ID
+  createdAt?: number;
+  userId?: string;
+  orgId?: string;
+  projectId?: string;
+  reporterId?: string;
+  assigneeId?: string | null;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  description?: string;
+  completedAt?: number;  // timestamp when task was marked as completed
+  expiresAt?: number;    // timestamp when task should be auto-deleted (30 days)
 }
 
 export interface TaskFormData {
   title: string;
   deadline: string;
   subtasks?: Subtask[];
+  description?: string;
+  assigneeId?: string | null;
+  status?: TaskStatus;
+  priority?: TaskPriority;
 }
 
 export interface CompletedTask extends Task {
@@ -26,7 +44,7 @@ export interface CompletedTask extends Task {
   expiresAt: number;   // timestamp when task should be auto-deleted (30 days)
 }
 
-export type ViewMode = 'active' | 'completed' | 'calendar' | 'analysis';
+export type ViewMode = 'active' | 'board' | 'completed' | 'calendar' | 'analysis' | 'org-settings' | 'project-settings';
 
 // Notification types
 export interface Notification {
@@ -42,7 +60,7 @@ export interface Notification {
 }
 
 // Sorting types
-export type SortOption = 'createdTime' | 'deadline';
+export type SortOption = 'createdTime' | 'deadline' | 'priority';
 export type SortDirection = 'asc' | 'desc';
 
 // Calendar utility types
@@ -129,4 +147,21 @@ export interface TaskMetrics {
 export interface AnalysisData {
   subtaskMetrics: SubtaskMetrics;
   taskMetrics: TaskMetrics;
+}
+
+export interface Project {
+  id: string;
+  orgId: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'archived';
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export interface ProjectMember {
+  userId: string;
+  role: ProjectRole;
+  displayName?: string;
+  email?: string;
 }

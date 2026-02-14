@@ -1,0 +1,84 @@
+{
+  "users": {
+    "description": "Top-level collection storing application users.",
+    "fields": {
+      "email": "string",
+      "emailLower": "string (normalized lowercase email)",
+      "displayName": "string",
+      "avatarUrl": "string",
+      "joinedOrganizations": "array<string>",
+      "createdAt": "timestamp"
+    }
+  },
+  "organizations": {
+    "description": "Organizations that group tasks and members.",
+    "fields": {
+      "name": "string",
+      "ownerId": "string (uid of creator)",
+      "ownerEmail": "string",
+      "createdAt": "timestamp",
+      "memberCount": "number",
+      "projectCount": "number"
+    },
+    "subcollections": {
+      "members": {
+        "fields": {
+          "userId": "string",
+          "email": "string",
+          "displayName": "string",
+          "role": "\"owner\" | \"admin\" | \"member\"",
+          "joinedAt": "timestamp"
+        }
+      },
+      "projects": {
+        "fields": {
+          "name": "string",
+          "key": "string (short identifier, e.g. GRD)",
+          "description": "string",
+          "ownerId": "string",
+          "status": "\"active\" | \"archived\"",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        },
+        "subcollections": {
+          "members": {
+            "fields": {
+              "userId": "string",
+              "role": "\"admin\" | \"contributor\" | \"viewer\"",
+              "addedAt": "timestamp"
+            }
+          },
+          "tasks": {
+            "fields": {
+              "summary": "string",
+              "description": "string",
+              "status": "\"todo\" | \"inProgress\" | \"done\"",
+              "priority": "\"low\" | \"medium\" | \"high\" | \"critical\"",
+              "assigneeId": "string | null",
+              "reporterId": "string",
+              "dueDate": "timestamp | null",
+              "createdAt": "timestamp",
+              "updatedAt": "timestamp",
+              "subtasks": "array<{ id:string, title:string, done:boolean }>"
+            }
+          }
+        }
+      }
+    }
+  },
+  "organizationInvitations": {
+    "description": "Pending invitations for users to join organizations.",
+    "fields": {
+      "orgId": "string",
+      "invitedEmail": "string (lowercase)",
+      "invitedUserId": "string | null",
+      "invitedBy": "string (uid of inviter)",
+      "invitedByEmail": "string",
+      "inviterRole": "\"owner\" | \"admin\"",
+      "status": "\"pending\" | \"accepted\" | \"declined\"",
+      "createdAt": "timestamp",
+      "acceptedAt": "timestamp | null"
+    }
+  }
+}
+

@@ -1,0 +1,486 @@
+\section{Tổng quan hệ thống}
+
+\subsection{Mô tả chức năng}
+
+Ứng dụng Gradually cung cấp các nhóm chức năng chính sau:
+
+\subsubsection{Quản lý người dùng và xác thực}
+\begin{itemize}
+    \item Đăng ký tài khoản với xác thực email
+    \item Đăng nhập/Đăng xuất
+    \item Thiết lập hồ sơ cá nhân (Profile Setup)
+    \item Quản lý phiên làm việc
+\end{itemize}
+
+\subsubsection{Quản lý tổ chức (Organization)}
+\begin{itemize}
+    \item Tạo tổ chức mới
+    \item Mời thành viên qua email
+    \item Phân quyền: Owner (chủ sở hữu), Admin (quản trị), Member (thành viên)
+    \item Chuyển đổi giữa các tổ chức
+    \item Rời khỏi hoặc xóa tổ chức
+\end{itemize}
+
+\subsubsection{Quản lý dự án (Project)}
+\begin{itemize}
+    \item Tạo dự án trong tổ chức
+    \item Thêm thành viên vào dự án
+    \item Phân quyền dự án: Admin, Contributor (cộng tác viên), Viewer (người xem)
+    \item Rời khỏi hoặc xóa dự án
+\end{itemize}
+
+\subsubsection{Quản lý công việc (Task Management)}
+\begin{itemize}
+    \item Tạo, sửa, xóa task với các thuộc tính: tiêu đề, mô tả, deadline, priority, status, assignee
+    \item Quản lý subtask thủ công
+    \item \textbf{Sinh subtask tự động bằng AI} - tính năng cốt lõi của ứng dụng
+    \item Đánh dấu hoàn thành task/subtask
+    \item Sắp xếp theo thời gian, deadline, priority
+\end{itemize}
+
+\subsubsection{Đa dạng chế độ xem}
+\begin{itemize}
+    \item \textbf{List View:} Hiển thị danh sách task dạng thẻ
+    \item \textbf{Board View:} Hiển thị dạng Kanban với các cột trạng thái (To Do, In Progress, Done)
+    \item \textbf{Calendar View:} Hiển thị task theo lịch, dễ dàng theo dõi deadline
+    \item \textbf{Completed View:} Xem các task đã hoàn thành
+    \item \textbf{Analysis View:} Thống kê và phân tích tiến độ công việc
+\end{itemize}
+
+\subsubsection{Hệ thống thông báo}
+\begin{itemize}
+    \item Cảnh báo task sắp đến hạn
+    \item Thông báo task quá hạn (overdue)
+    \item Tự động dọn dẹp thông báo đã xử lý
+\end{itemize}
+
+\subsection{Biểu đồ Use Case}
+
+% TODO: Chèn ảnh Use Case Diagram
+% Tạo file: method/usecase.png
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/usecase.png}
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{3cm}\textbf{[CHÈN ẢNH: Use Case Diagram]}\\\small Vẽ bằng draw.io hoặc PlantUML\\Lưu tại: method/usecase.png\vspace{3cm}}}
+    \caption{Biểu đồ Use Case của hệ thống Gradually}
+    \label{fig:usecase}
+\end{figure}
+
+Biểu đồ Use Case (Hình \ref{fig:usecase}) thể hiện các actor chính và các chức năng tương ứng:
+\begin{itemize}
+    \item \textbf{Guest:} Đăng ký, Đăng nhập
+    \item \textbf{Member:} Xem task, Cập nhật trạng thái task
+    \item \textbf{Contributor:} Tất cả quyền của Member + Chỉnh sửa task
+    \item \textbf{Admin:} Tất cả quyền của Contributor + Tạo/Xóa task, Quản lý thành viên project
+    \item \textbf{Owner:} Toàn quyền quản lý tổ chức và các dự án
+\end{itemize}
+
+%==================================================
+\section{Thiết kế hệ thống}
+%==================================================
+
+\subsection{Kiến trúc tổng thể}
+
+Ứng dụng Gradually được xây dựng theo kiến trúc \textbf{Serverless} với Firebase làm backend, giúp giảm thiểu chi phí vận hành và dễ dàng mở rộng.
+
+% TODO: Chèn ảnh Architecture Diagram
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{method/architecture.png}
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: System Architecture]}\\\small Vẽ sơ đồ kiến trúc hệ thống\\Lưu tại: method/architecture.png\vspace{4cm}}}
+    \caption{Kiến trúc tổng thể của hệ thống Gradually}
+    \label{fig:architecture}
+\end{figure}
+
+\subsubsection{Các thành phần chính}
+
+\begin{table}[H]
+\centering
+\caption{Các thành phần trong kiến trúc hệ thống}
+\label{tab:components}
+\begin{tabular}{|l|l|p{7cm}|}
+\hline
+\textbf{Thành phần} & \textbf{Công nghệ} & \textbf{Mô tả} \\ \hline
+Frontend & React 19 + TypeScript & Single Page Application với Vite build tool \\ \hline
+State Management & Zustand & Quản lý state nhẹ, selector + shallow compare tối ưu re-render, persist theo user \\ \hline
+Authentication & Firebase Auth & Xác thực email/password với email verification \\ \hline
+Database & Cloud Firestore & NoSQL database với real-time sync \\ \hline
+AI Service & External API & Tích hợp AI để sinh subtask tự động \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Frontend architecture \& state flow}
+\begin{itemize}
+    \item Tổ chức \textbf{feature-first} (components/pages/services/store) để giảm coupling, thuận tiện mở rộng.
+    \item \textbf{Zustand} dùng selector + shallow compare để tránh re-render, persist state gắn với user (setCurrentUserId).
+    \item \textbf{AuthContext} cung cấp currentUser/isEmailVerified/profileLoading; App.tsx điều phối view và guard truy cập.
+    \item \textbf{UI/UX}: Sidebar nhóm chức năng kiểu Facebook, nhiều chế độ xem (List/Board/Calendar/Analysis) giảm tải nhận thức.
+\end{itemize}
+
+% TODO: Chèn ảnh Frontend state flow
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{method/state_flow.png}
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Frontend State Flow]}\\\small Luồng state giữa AuthContext, Zustand stores và views\\Lưu tại: method/state_flow.png\vspace{4cm}}}
+    \caption{Luồng state và dữ liệu trên frontend}
+    \label{fig:state_flow}
+\end{figure}
+
+\subsubsection{Authentication \& phân quyền}
+\begin{itemize}
+    \item Đăng nhập Firebase Auth, bắt buộc \textbf{email verification}; sau login load organizations và validate selectedOrgId.
+    \item Subscribe members để lấy role org (owner/admin/member); subscribe projectMembers để lấy role project (admin/contributor/viewer).
+    \item Guard UI tại App.tsx: các return sớm (Loading, Login, Verify email, Select Org/Project) đảm bảo hook order và chặn truy cập trái phép.
+    \item Quyền hành động: chỉ admin/owner được tạo task; admin/contributor chỉnh sửa; viewer chỉ xem.
+\end{itemize}
+
+% TODO: Chèn Sequence đăng nhập và lấy role
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{method/sequence_auth.png}
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Auth \& Role Sequence]}\\\small Luồng: Login -> Load Orgs -> Validate Org -> Load Projects -> Roles\\Lưu tại: method/sequence_auth.png\vspace{4cm}}}
+    \caption{Luồng xác thực và phân quyền}
+    \label{fig:sequence_auth}
+\end{figure}
+
+\subsubsection{Real-time sync \& cleanup}
+\begin{itemize}
+    \item Firestore listeners: \texttt{subscribeToOrganizationMembers}, \texttt{subscribeToProjectMembers}, \texttt{subscribeToProjectTasks}.
+    \item Cleanup: return unsubscribe trong useEffect; khi đổi org/project hoặc logout thì clear store, tránh rò rỉ listener.
+    \item Khi selectedOrgId/selectedProjectId null: reset tasks, completedTasks, members, roles về trạng thái rỗng.
+    \item TaskForm chỉ render khi appController.shouldShowForm hoặc đang edit task/subtask, tránh mount không cần thiết.
+\end{itemize}
+
+% TODO: Chèn Sequence real-time tasks
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{method/sequence_realtime.png}
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Realtime Task Sync Sequence]}\\\small Luồng: Firestore -> listener -> taskManager -> setTasks state\\Lưu tại: method/sequence_realtime.png\vspace{4cm}}}
+    \caption{Luồng đồng bộ thời gian thực cho Task}
+    \label{fig:sequence_realtime}
+\end{figure}
+
+\subsection{Thiết kế cơ sở dữ liệu}
+
+Hệ thống sử dụng Cloud Firestore với cấu trúc document-based. Dưới đây là thiết kế schema chính:
+
+% TODO: Chèn ảnh Database Schema
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/database_schema.png}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Database Schema]}\\\small Vẽ sơ đồ quan hệ các collection\\Lưu tại: method/database\_schema.png\vspace{4cm}}}
+    \caption{Sơ đồ cơ sở dữ liệu Firestore}
+    \label{fig:database}
+\end{figure}
+
+\subsubsection{Cấu trúc Collections}
+
+\textbf{1. Collection: users}
+\begin{verbatim}
+users/{userId}
+├── userId: string
+├── email: string
+├── emailLower: string (for case-insensitive search)
+├── displayName: string
+├── avatarUrl: string
+└── joinedOrganizations: array<string>
+\end{verbatim}
+
+\textbf{2. Collection: organizations}
+\begin{verbatim}
+organizations/{orgId}
+├── name: string
+├── ownerId: string
+├── ownerEmail: string
+├── createdAt: timestamp
+├── memberCount: number
+└── members/{userId}  (subcollection)
+    ├── role: "owner" | "admin" | "member"
+    ├── email: string
+    ├── displayName: string
+    └── joinedAt: timestamp
+\end{verbatim}
+
+\textbf{3. Collection: projects (subcollection of organizations)}
+\begin{verbatim}
+organizations/{orgId}/projects/{projectId}
+├── name: string
+├── description: string
+├── status: "active" | "archived"
+├── createdAt: timestamp
+├── members/{userId}  (subcollection)
+│   ├── role: "admin" | "contributor" | "viewer"
+│   └── addedAt: timestamp
+└── tasks/{taskId}  (subcollection)
+    ├── title: string
+    ├── description: string
+    ├── deadline: string (ISO datetime)
+    ├── status: "todo" | "inProgress" | "done"
+    ├── priority: "low" | "medium" | "high" | "critical"
+    ├── assigneeId: string
+    ├── done: boolean
+    ├── createdAt: number
+    └── subtasks: array<Subtask>
+\end{verbatim}
+
+\textbf{4. Collection: organizationInvitations}
+\begin{verbatim}
+organizationInvitations/{invitationId}
+├── orgId: string
+├── invitedEmail: string
+├── invitedUserId: string (optional)
+├── invitedBy: string
+├── status: "pending" | "accepted" | "declined"
+└── createdAt: timestamp
+\end{verbatim}
+
+\subsection{Thiết kế giao diện người dùng}
+
+Giao diện ứng dụng được thiết kế theo nguyên tắc \textbf{Dark Mode First} với bảng màu chủ đạo:
+\begin{itemize}
+    \item Background: \#1a1a2e (Dark Navy)
+    \item Primary: \#5FF281 (Neon Green)
+    \item Secondary: \#16213e (Dark Blue)
+    \item Accent colors cho priority: Green (Low), Yellow (Medium), Red (High), Dark Red (Critical)
+\end{itemize}
+
+% TODO: Chèn ảnh UI Design / Mockup
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/ui_overview.png}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: UI Overview]}\\\small Screenshot tổng quan giao diện\\Lưu tại: method/ui\_overview.png\vspace{4cm}}}
+    \caption{Tổng quan giao diện ứng dụng Gradually}
+    \label{fig:ui_overview}
+\end{figure}
+
+\subsection{Thiết kế tính năng AI Subtask Generation}
+
+Đây là tính năng cốt lõi của ứng dụng, giúp người dùng phân rã task lớn thành các subtask nhỏ hơn một cách tự động.
+
+\subsubsection{Luồng hoạt động}
+
+\begin{enumerate}
+    \item Người dùng tạo task với tiêu đề và deadline
+    \item Nhấn nút ``AI Generate'' trong form tạo task
+    \item Frontend gửi request đến AI Service với thông tin task
+    \item AI phân tích và trả về danh sách subtask được đề xuất
+    \item Các subtask được thêm vào task với deadline được tính toán hợp lý
+\end{enumerate}
+
+\subsubsection{Thuật toán phân bổ thời gian}
+
+AI Service không chỉ sinh ra danh sách subtask mà còn tính toán deadline cho từng subtask dựa trên:
+\begin{itemize}
+    \item Tổng thời gian còn lại đến deadline của task cha
+    \item Độ phức tạp ước tính của từng subtask
+    \item Phân bổ đều thời gian để tránh dồn việc (anti-cramming)
+\end{itemize}
+
+% TODO: Chèn Sequence AI
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{method/ai_sequence.png}
+    \fbox{\parbox{0.75\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: AI Subtask Generation Sequence]}\\\small Luồng: User -> Frontend -> AI API -> Subtasks -> Firestore\\Lưu tại: method/ai_sequence.png\vspace{4cm}}}
+    \caption{Trình tự sinh subtask bằng AI}
+    \label{fig:ai_sequence}
+\end{figure}
+
+\subsubsection{Heuristic chống cramming}
+\begin{itemize}
+    \item Nếu còn $T$ giờ đến deadline và có $n$ subtask: phân bổ cơ sở $T/n$, dành \textbf{20--30\% buffer} cuối cho rủi ro.
+    \item Subtask phức tạp hơn sẽ được đẩy lên sớm (front-loading) để giảm nguy cơ dồn việc.
+    \item Nếu người dùng sửa deadline subtask thủ công, heuristic chỉ tính lại cho phần chưa khóa.
+\end{itemize}
+
+% TODO: Chèn biểu đồ Gantt phân bổ subtask
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{method/anti_cramming_gantt.png}
+    \fbox{\parbox{0.8\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Anti-cramming Gantt]}\\\small Minh họa phân bổ subtask tránh dồn việc\\Lưu tại: method/anti_cramming_gantt.png\vspace{4cm}}}
+    \caption{Gantt minh họa phân bổ subtask tránh cramming}
+    \label{fig:anti_cramming}
+\end{figure}
+
+\subsubsection{Bảo mật \& giới hạn AI}
+\begin{itemize}
+    \item API key AI đặt phía server/proxy, không để lộ trên client.
+    \item Rate limit theo user/ngày; fallback sang tạo subtask thủ công khi vượt hạn mức.
+    \item Retry tối đa 2 lần; nếu vẫn lỗi, hiển thị thông báo và giữ nguyên dữ liệu người dùng đã nhập.
+\end{itemize}
+
+%==================================================
+\section{Triển khai hệ thống}
+%==================================================
+
+\subsection{Cấu trúc source code}
+
+Dự án được tổ chức theo mô hình feature-based với cấu trúc thư mục rõ ràng:
+
+\begin{verbatim}
+src/
+├── components/          # React components
+│   ├── org/            # Organization-related components
+│   ├── project/        # Project-related components
+│   └── ...
+├── contexts/           # React Context (AuthContext)
+├── pages/              # Page components
+├── services/           # Business logic & API calls
+│   ├── authService.ts
+│   ├── organizationService.ts
+│   ├── projectService.ts
+│   ├── firebaseTaskService.ts
+│   ├── aiService.ts
+│   └── notificationService.ts
+├── store/              # Zustand state stores
+│   ├── organizationStore.ts
+│   └── projectStore.ts
+├── utils/              # Utility functions
+├── types.ts            # TypeScript type definitions
+├── App.tsx             # Main application component
+└── main.tsx            # Entry point
+\end{verbatim}
+
+\subsection{Các module chính}
+
+\subsubsection{Authentication Module}
+
+Xử lý đăng ký, đăng nhập, xác thực email và quản lý phiên:
+
+\begin{itemize}
+    \item \texttt{AuthContext.tsx}: React Context cung cấp thông tin user cho toàn ứng dụng
+    \item \texttt{authService.ts}: Các hàm tương tác với Firebase Auth
+    \item \texttt{Login.tsx}: Component giao diện đăng nhập/đăng ký
+\end{itemize}
+
+\subsubsection{Organization \& Project Module}
+
+Quản lý cấu trúc tổ chức với phân quyền:
+
+\begin{itemize}
+    \item Real-time subscription để đồng bộ danh sách members
+    \item Hệ thống invitation với email
+    \item Validation quyền trước mỗi thao tác
+\end{itemize}
+
+\subsubsection{Task Management Module}
+
+Xử lý CRUD cho task và subtask với các tính năng:
+
+\begin{itemize}
+    \item Firestore real-time listener cho task updates
+    \item Sorting theo multiple criteria (time, deadline, priority)
+    \item Drag-and-drop trong Board View
+\end{itemize}
+
+\subsubsection{AI Service Module}
+
+Tích hợp AI để sinh subtask:
+
+\begin{itemize}
+    \item Gửi prompt chứa thông tin task đến AI API
+    \item Parse response và tạo subtask objects
+    \item Tính toán deadline phù hợp cho từng subtask
+\end{itemize}
+
+\subsection{Kết quả triển khai}
+
+\subsubsection{Giao diện List View}
+
+% TODO: Chèn screenshot List View
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/screenshot_list.png}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: List View Screenshot]}\\\small Screenshot màn hình List View\\Lưu tại: method/screenshot\_list.png\vspace{4cm}}}
+    \caption{Giao diện List View - hiển thị danh sách task dạng thẻ}
+    \label{fig:list_view}
+\end{figure}
+
+\subsubsection{Giao diện Board View (Kanban)}
+
+% TODO: Chèn screenshot Board View
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/screenshot_board.png}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Board View Screenshot]}\\\small Screenshot màn hình Board View\\Lưu tại: method/screenshot\_board.png\vspace{4cm}}}
+    \caption{Giao diện Board View - Kanban với các cột trạng thái}
+    \label{fig:board_view}
+\end{figure}
+
+\subsubsection{Giao diện Calendar View}
+
+% TODO: Chèn screenshot Calendar View
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/screenshot_calendar.png}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Calendar View Screenshot]}\\\small Screenshot màn hình Calendar View\\Lưu tại: method/screenshot\_calendar.png\vspace{4cm}}}
+    \caption{Giao diện Calendar View - xem task theo lịch}
+    \label{fig:calendar_view}
+\end{figure}
+
+\subsubsection{Form tạo Task với AI Generate}
+
+% TODO: Chèn screenshot Task Form với nút AI
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{method/screenshot_ai_generate.png}
+    \fbox{\parbox{0.65\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: AI Generate Feature]}\\\small Screenshot form tạo task với nút AI Generate\\Lưu tại: method/screenshot\_ai\_generate.png\vspace{4cm}}}
+    \caption{Form tạo Task với tính năng AI sinh subtask tự động}
+    \label{fig:ai_generate}
+\end{figure}
+
+\subsubsection{Sidebar Navigation}
+
+% TODO: Chèn screenshot Sidebar
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.4\textwidth]{method/screenshot_sidebar.png}
+    \fbox{\parbox{0.35\textwidth}{\centering\vspace{5cm}\textbf{[CHÈN ẢNH: Sidebar]}\\\small Screenshot sidebar navigation\\Lưu tại: method/screenshot\_sidebar.png\vspace{5cm}}}
+    \caption{Sidebar điều hướng theo nhóm chức năng}
+    \label{fig:sidebar}
+\end{figure}
+
+\subsubsection{Profile Menu}
+
+% TODO: Chèn screenshot Account Menu
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.4\textwidth]{method/screenshot_profile.png}
+    \fbox{\parbox{0.35\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Profile Menu]}\\\small Screenshot menu profile\\Lưu tại: method/screenshot\_profile.png\vspace{4cm}}}
+    \caption{Menu tài khoản với thông tin user và chuyển đổi tổ chức/dự án}
+    \label{fig:profile_menu}
+\end{figure}
+
+\subsubsection{Analysis View}
+
+% TODO: Chèn screenshot Analysis View
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{method/screenshot_analysis.png}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{4cm}\textbf{[CHÈN ẢNH: Analysis View Screenshot]}\\\small Screenshot màn hình Analysis View\\Lưu tại: method/screenshot\_analysis.png\vspace{4cm}}}
+    \caption{Giao diện Analysis View - thống kê tiến độ}
+    \label{fig:analysis_view}
+\end{figure}
+
+\subsection{Bảng tổng hợp chức năng}
+
+\begin{table}[H]
+\centering
+\caption{Tổng hợp các chức năng đã triển khai}
+\label{tab:features_summary}
+\begin{tabular}{|l|c|p{6cm}|}
+\hline
+\textbf{Chức năng} & \textbf{Trạng thái} & \textbf{Ghi chú} \\ \hline
+Đăng ký/Đăng nhập & Hoàn thành & Email verification bắt buộc \\ \hline
+Quản lý Organization & Hoàn thành & CRUD + phân quyền \\ \hline
+Quản lý Project & Hoàn thành & CRUD + phân quyền \\ \hline
+Quản lý Task & Hoàn thành & CRUD + assignee + priority \\ \hline
+Quản lý Subtask & Hoàn thành & CRUD thủ công \\ \hline
+AI sinh Subtask & Hoàn thành & Tích hợp AI API \\ \hline
+List View & Hoàn thành & Sorting đa tiêu chí \\ \hline
+Board View (Kanban) & Hoàn thành & Drag-and-drop \\ \hline
+Calendar View & Hoàn thành & Hiển thị theo tháng \\ \hline
+Analysis View & Hoàn thành & Thống kê tiến độ \\ \hline
+Thông báo deadline & Hoàn thành & Overdue alerts \\ \hline
+Real-time sync & Hoàn thành & Firestore listeners \\ \hline
+\end{tabular}
+\end{table}

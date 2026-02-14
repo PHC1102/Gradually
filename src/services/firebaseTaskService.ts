@@ -1,6 +1,9 @@
 import { db } from '../firebaseConfig';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, onSnapshot, deleteField, type Unsubscribe } from 'firebase/firestore';
 import type { Task, CompletedTask } from '../types';
+
+// Export deleteField for use in other services
+export { deleteField };
 
 // Define return types
 interface FirebaseResult<T = null> {
@@ -196,6 +199,134 @@ export const updateCompletedTaskInFirebase = async (taskId: string, updates: Par
 export const deleteCompletedTaskFromFirebase = async (taskId: string): Promise<FirebaseResult> => {
   try {
     const taskDoc = doc(db, 'completedTasks', taskId);
+    await withTimeout(deleteDoc(taskDoc), FIREBASE_TIMEOUT);
+    return { success: true, error: null };
+  } catch (error: any) {
+    const errorMsg = error?.message || 'Unknown error';
+    return { success: false, error: errorMsg };
+  }
+};
+
+// ===== PROJECT TASKS (NEW) =====
+
+/**
+ * Get project tasks path
+ */
+const getProjectTasksCollection = (orgId: string, projectId: string) => {
+  return collection(db, 'organizations', orgId, 'projects', projectId, 'tasks');
+};
+
+/**
+ * Get all tasks for a project
+ */
+export const getProjectTasks = async (orgId: string, projectId: string): Promise<FirebaseResult<Task>> => {
+  try {
+    console.log('Fetching tasks for project:', projectId);
+    const tasksRef = getProjectTasksCollection(orgId, projectId);
+    const querySnapshot = await withTimeout(getDocs(tasksRef), FIREBASE_READ_TIMEOUT);
+    const tasks: Task[] = [];
+    
+    querySnapshot.forEach((docSnap) => {
+      tasks.push({ id: docSnap.id, ...docSnap.data() } as Task);
+    });
+    
+    console.log('✅ Found', tasks.length, 'tasks for project:', projectId);
+    return { success: true, tasks, error: null };
+  } catch (error: any) {
+    const errorMsg = error?.message || 'Unknown error';
+    console.error('❌ Error fetching project tasks:', errorMsg);
+    return { success: false, tasks: [], error: errorMsg };
+  }
+};
+
+/**
+ * Subscribe to real-time updates for project tasks
+ * Returns an unsubscribe function
+ */
+export const subscribeToProjectTasks = (
+  orgId: string,
+  projectId: string,
+  callback: (tasks: Task[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe => {
+  console.log('Subscribing to project tasks:', projectId);
+  const tasksRef = getProjectTasksCollection(orgId, projectId);
+  
+  return onSnapshot(
+    tasksRef,
+    (snapshot) => {
+      const tasks: Task[] = [];
+      snapshot.forEach((docSnap) => {
+        tasks.push({ 
+          id: docSnap.id, 
+          ...docSnap.data() 
+        } as Task);
+      });
+      console.log('📡 Real-time update: Found', tasks.length, 'tasks');
+      callback(tasks);
+    },
+    (error) => {
+      console.error('❌ Error subscribing to project tasks:', error);
+      onError?.(error);
+    }
+  );
+};
+
+/**
+ * Add task to project
+ */
+export const addProjectTask = async (
+  orgId: string,
+  projectId: string,
+  task: Omit<Task, 'id'>
+): Promise<FirebaseResult<string>> => {
+  try {
+    console.log('Adding task to project:', projectId, task);
+    const tasksRef = getProjectTasksCollection(orgId, projectId);
+    const docRef = await withTimeout(addDoc(tasksRef, {
+      ...task,
+      orgId,
+      projectId,
+      createdAt: Date.now(),
+    }), FIREBASE_TIMEOUT);
+    console.log('✅ Task added successfully with ID:', docRef.id);
+    return { success: true, id: docRef.id, error: null };
+  } catch (error: any) {
+    const errorMsg = error?.message || 'Unknown error';
+    console.error('❌ Error adding project task:', errorMsg);
+    return { success: false, id: null, error: errorMsg };
+  }
+};
+
+/**
+ * Update project task
+ */
+export const updateProjectTask = async (
+  orgId: string,
+  projectId: string,
+  taskId: string,
+  updates: Partial<Task>
+): Promise<FirebaseResult> => {
+  try {
+    const taskDoc = doc(db, 'organizations', orgId, 'projects', projectId, 'tasks', taskId);
+    await withTimeout(updateDoc(taskDoc, updates), FIREBASE_TIMEOUT);
+    return { success: true, error: null };
+  } catch (error: any) {
+    const errorMsg = error?.message || 'Unknown error';
+    return { success: false, error: errorMsg };
+  }
+};
+
+/**
+ * Delete project task
+ */
+export const deleteProjectTask = async (
+  orgId: string,
+  projectId: string,
+  taskId: string
+): Promise<FirebaseResult> => {
+  try {
+    const taskDoc = doc(db, 'organizations', orgId, 'projects', projectId, 'tasks', taskId);
     await withTimeout(deleteDoc(taskDoc), FIREBASE_TIMEOUT);
     return { success: true, error: null };
   } catch (error: any) {

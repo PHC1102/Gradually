@@ -1,0 +1,56 @@
+\section{Giới thiệu}
+
+\subsection{Bối cảnh và động lực}
+
+Trong bối cảnh xã hội hiện đại, việc quản lý thời gian và công việc hiệu quả trở thành một thách thức lớn đối với sinh viên và người đi làm. Theo nghiên cứu, hiện tượng \textbf{``cramming''} (dồn việc vào phút chót) là một trong những nguyên nhân chính dẫn đến stress, giảm chất lượng công việc và ảnh hưởng tiêu cực đến sức khỏe tinh thần.
+
+Các ứng dụng quản lý công việc truyền thống như Todoist, Microsoft To-Do hay Google Tasks đã giải quyết được vấn đề theo dõi danh sách việc cần làm, tuy nhiên chúng vẫn còn một số hạn chế:
+
+\begin{itemize}
+    \item Không hỗ trợ phân rã nhiệm vụ lớn thành các bước nhỏ hơn một cách tự động
+    \item Thiếu cơ chế cảnh báo và ngăn chặn việc dồn deadline
+    \item Không có tính năng cộng tác theo nhóm với phân quyền chi tiết
+    \item Giao diện đơn điệu, thiếu các chế độ xem đa dạng
+\end{itemize}
+
+\subsection{Mục tiêu của dự án}
+
+Dự án \textbf{Gradually} được phát triển với mục tiêu xây dựng một ứng dụng quản lý công việc thông minh, tích hợp trí tuệ nhân tạo (AI) để:
+
+\begin{enumerate}
+    \item \textbf{Phân rã nhiệm vụ tự động:} Sử dụng AI để chia nhỏ các task lớn thành các subtask có thể thực hiện được, giúp người dùng tiếp cận công việc một cách từ từ (gradually) thay vì dồn việc.
+    
+    \item \textbf{Hỗ trợ làm việc nhóm:} Xây dựng hệ thống tổ chức (Organization) và dự án (Project) với phân quyền chi tiết, cho phép nhiều người cùng cộng tác.
+    
+    \item \textbf{Đa dạng chế độ hiển thị:} Cung cấp nhiều góc nhìn khác nhau về công việc bao gồm List View, Board View (Kanban), Calendar View và Analysis View.
+    
+    \item \textbf{Cập nhật thời gian thực:} Sử dụng Firebase Realtime để đồng bộ dữ liệu tức thì giữa các thành viên trong nhóm.
+    
+    \item \textbf{Hệ thống thông báo thông minh:} Cảnh báo các task sắp đến hạn hoặc quá hạn để người dùng chủ động điều chỉnh kế hoạch.
+\end{enumerate}
+
+\subsection{Phạm vi thực hiện}
+
+Trong phạm vi của Project I, ứng dụng Gradually được triển khai với các chức năng cốt lõi sau:
+
+\begin{itemize}
+    \item Hệ thống xác thực người dùng với email verification
+    \item Quản lý tổ chức và dự án với phân quyền (Owner, Admin, Member, Contributor, Viewer)
+    \item CRUD đầy đủ cho Task và Subtask
+    \item Tích hợp AI sinh subtask tự động
+    \item Giao diện đa chế độ xem (List, Board, Calendar, Analysis)
+    \item Hệ thống thông báo deadline
+    \item Real-time synchronization giữa các client
+\end{itemize}
+
+\subsection{Ý nghĩa thực tiễn}
+
+Ứng dụng Gradually không chỉ là một công cụ quản lý công việc thông thường mà còn đóng vai trò như một ``người đồng hành'' giúp người dùng hình thành thói quen làm việc khoa học, tránh được tình trạng cramming phổ biến. Việc tích hợp AI để phân rã nhiệm vụ giúp giảm bớt gánh nặng tâm lý khi đối mặt với các task lớn, đồng thời tăng tính khả thi và động lực hoàn thành công việc.
+
+\subsection{Đóng góp nổi bật}
+\begin{itemize}
+    \item Thiết kế \textbf{double-layer roles} (Organization + Project) đảm bảo kiểm soát quyền chặt chẽ cho làm việc nhóm.
+    \item Tích hợp \textbf{AI Subtask Generation} kèm heuristic chống dồn việc, ưu tiên front-loading các subtask phức tạp.
+    \item Kiến trúc \textbf{Serverless} với Firebase + React 19 + Zustand, real-time sync, giảm chi phí vận hành.
+    \item Đa chế độ xem (List/Board/Calendar/Analysis) phục vụ nhiều phong cách quản lý công việc.
+\end{itemize}

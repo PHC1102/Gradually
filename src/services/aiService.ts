@@ -112,7 +112,7 @@ Start returning only JSON.`;
       // Parse the JSON response
       const parsedSubtasks = this.parseAIResponse(aiResponse);
       
-      // Convert to our Subtask format
+      // Convert to our Subtask format  
       return this.convertToSubtasks(parsedSubtasks, request.taskDeadline);
     } catch (error) {
       console.error('AI Service Error:', error);

@@ -1,0 +1,203 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function authUid() {
+      return request.auth.uid;
+    }
+
+    function lowerEmail() {
+      return (request.auth != null && request.auth.token.email != null)
+        ? lower(request.auth.token.email)
+        : null;
+    }
+
+    // Tasks created per-user (legacy behavior)
+    match /tasks/{taskId} {
+      allow create: if isSignedIn() && request.resource.data.userId == authUid();
+      allow get, list: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == authUid();
+    }
+
+    match /completedTasks/{taskId} {
+      allow create: if isSignedIn() && request.resource.data.userId == authUid();
+      allow get, list: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == authUid();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow create, update: if isSignedIn() && userId == authUid();
+      allow list: if isSignedIn();
+    }
+
+    match /organizations/{orgId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerId == authUid();
+      allow update: if isSignedIn() 
+        && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid()))
+        && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid())).data.role == 'owner';
+      allow delete: if false;
+
+      match /members/{memberId} {
+        // Anyone signed in can read member docs
+        allow get, list: if isSignedIn();
+
+        // Allow create - SIMPLIFIED for debugging:
+        // 1. Anyone can create their own member doc as 'member'
+        // 2. Existing members can add others
+        allow create: if isSignedIn() && (
+          // Self-registration as member
+          (memberId == authUid())
+          // Or existing member adding others
+          || exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid()))
+        );
+
+        // Allow update for role changes
+        allow update: if isSignedIn() 
+          && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid()))
+          && (
+            // Owner can update any role except other owners
+            (get(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid())).data.role == 'owner'
+              && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(memberId)).data.role != 'owner')
+            // Admin can update members to admin/member
+            || (get(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid())).data.role == 'admin'
+                && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(memberId)).data.role == 'member'
+                && request.resource.data.role in ['admin', 'member'])
+          );
+
+        // Allow delete
+        allow delete: if isSignedIn() 
+          && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid()))
+          && (
+            // Owner can delete non-owners
+            (get(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid())).data.role == 'owner'
+              && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(memberId)).data.role != 'owner')
+            // Admin can delete members
+            || (get(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid())).data.role == 'admin'
+                && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(memberId)).data.role == 'member')
+          );
+      }
+
+      match /projects/{projectId} {
+        function amIOrgMember() {
+          return exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid()));
+        }
+        
+        function getMyOrgRole() {
+          return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(authUid())).data.role;
+        }
+        
+        function amIOrgManager() {
+          return amIOrgMember() && getMyOrgRole() in ['owner', 'admin'];
+        }
+        
+        function amIOrgOwner() {
+          return amIOrgMember() && getMyOrgRole() == 'owner';
+        }
+
+        allow get, list: if isSignedIn() && amIOrgMember();
+        allow create: if isSignedIn() && amIOrgMember();
+        allow update: if isSignedIn() && amIOrgMember();
+        allow delete: if isSignedIn() && amIOrgOwner();
+
+        match /members/{projectMemberId} {
+          function amIProjectMember() {
+            return exists(/databases/$(database)/documents/organizations/$(orgId)/projects/$(projectId)/members/$(authUid()));
+          }
+          
+          function getMyProjectRole() {
+            return get(/databases/$(database)/documents/organizations/$(orgId)/projects/$(projectId)/members/$(authUid())).data.role;
+          }
+          
+          function amIProjectAdmin() {
+            return amIProjectMember() && getMyProjectRole() == 'admin';
+          }
+
+          // Org members can read project members
+          allow get: if isSignedIn() && amIOrgMember();
+          allow list: if isSignedIn() && amIOrgMember();
+          
+          // Org members can add project members
+          allow create: if isSignedIn() && amIOrgMember();
+          
+          // Org managers or project admins can update/delete
+          allow update, delete: if isSignedIn() && (amIOrgManager() || amIProjectAdmin());
+        }
+
+        match /tasks/{taskId} {
+          function amIProjectContributor() {
+            let projMemberRef = /databases/$(database)/documents/organizations/$(orgId)/projects/$(projectId)/members/$(authUid());
+            return exists(projMemberRef) && get(projMemberRef).data.role in ['admin', 'contributor'];
+          }
+
+          // Org members can read tasks
+          allow get, list: if isSignedIn() && amIOrgMember();
+          
+          // Org managers or project contributors can create
+          allow create: if isSignedIn() && (amIOrgManager() || amIProjectContributor());
+          
+          // Org managers, project admin, or task owner can update
+          allow update: if isSignedIn() && (
+            amIOrgManager()
+            || amIProjectAdmin()
+            || (amIProjectContributor() && (resource.data.assigneeId == authUid() || resource.data.reporterId == authUid()))
+          );
+          
+          // Org managers, project admin, or task reporter can delete
+          allow delete: if isSignedIn() && (
+            amIOrgManager()
+            || amIProjectAdmin()
+            || (amIProjectContributor() && resource.data.reporterId == authUid())
+          );
+        }
+      }
+    }
+
+    match /organizationInvitations/{invitationId} {
+      function getOrgId() {
+        return resource != null ? resource.data.orgId : request.resource.data.orgId;
+      }
+      
+      function isOrgManager(orgId) {
+        let memberRef = /databases/$(database)/documents/organizations/$(orgId)/members/$(authUid());
+        return exists(memberRef) && get(memberRef).data.role in ['owner', 'admin'];
+      }
+
+      function isInvitee() {
+        return isSignedIn() && (
+          (resource.data.invitedUserId != null && resource.data.invitedUserId == authUid())
+          || (resource.data.invitedEmail == lowerEmail())
+        );
+      }
+
+      // Managers or invitee can read
+      allow get: if isSignedIn() && (isOrgManager(getOrgId()) || isInvitee());
+
+      // Anyone signed in can list (client-side filtering)
+      allow list: if isSignedIn();
+
+      // Only managers can create invitations
+      allow create: if isSignedIn()
+        && isOrgManager(request.resource.data.orgId)
+        && request.resource.data.status == 'pending';
+
+      // Invitee can update status to accepted/declined - SIMPLIFIED
+      allow update: if isSignedIn()
+        && (
+          // User ID matches
+          (resource.data.invitedUserId != null && resource.data.invitedUserId == authUid())
+          // OR email matches
+          || (resource.data.invitedEmail == lowerEmail())
+        )
+        && request.resource.data.status in ['accepted', 'declined'];
+
+      // Only managers can delete
+      allow delete: if isSignedIn() && isOrgManager(getOrgId());
+    }
+  }
+}

@@ -45,6 +45,25 @@ export class TaskSortingService {
   }
 
   /**
+   * Sort tasks by priority
+   */
+  private sortByPriority(tasks: Task[], direction: SortDirection): Task[] {
+    const priorityOrder: Record<string, number> = {
+      'critical': 4,
+      'high': 3,
+      'medium': 2,
+      'low': 1,
+    };
+    
+    return [...tasks].sort((a, b) => {
+      const aPriority = priorityOrder[a.priority || 'medium'];
+      const bPriority = priorityOrder[b.priority || 'medium'];
+      
+      return direction === 'asc' ? aPriority - bPriority : bPriority - aPriority;
+    });
+  }
+
+  /**
    * Sort tasks based on the given option and direction
    */
   sortTasks(tasks: Task[], option: SortOption, direction: SortDirection): Task[] {
@@ -53,6 +72,8 @@ export class TaskSortingService {
         return this.sortByCreatedTime(tasks, direction);
       case 'deadline':
         return this.sortByDeadline(tasks, direction);
+      case 'priority':
+        return this.sortByPriority(tasks, direction);
       default:
         return tasks;
     }
@@ -62,7 +83,10 @@ export class TaskSortingService {
    * Get sort display text
    */
   getSortDisplayText(option: SortOption, direction: SortDirection): string {
-    const optionText = option === 'createdTime' ? 'Created Time' : 'Deadline';
+    let optionText = 'Created Time';
+    if (option === 'deadline') optionText = 'Deadline';
+    else if (option === 'priority') optionText = 'Priority';
+    
     const directionText = direction === 'asc' ? '↑' : '↓';
     return `${optionText} ${directionText}`;
   }

@@ -6,7 +6,12 @@ import {
   getCompletedTasksFromFirebase,
   updateTaskInFirebase,
   updateCompletedTaskInFirebase,
-  addCompletedTaskToFirebase
+  addCompletedTaskToFirebase,
+  // Project tasks (NEW)
+  addProjectTask,
+  updateProjectTask,
+  deleteProjectTask,
+  deleteField
 } from './firebaseTaskService';
 import { getCurrentUser } from './authService';
 
@@ -17,10 +22,33 @@ import { getCurrentUser } from './authService';
 export class TaskManager {
   private tasks: Task[] = [];
   private completedTasks: CompletedTask[] = [];
+  // Track locally-created task IDs that are pending a Firebase write
+  private pendingLocalIds: Set<string | number> = new Set();
+  private currentOrgId: string | null = null;
+  private currentProjectId: string | null = null;
   
   constructor() {
     // Initialize without loading tasks
     // Loading is handled by the App component
+  }
+
+  setContext(orgId: string | null, projectId: string | null) {
+    this.currentOrgId = orgId;
+    this.currentProjectId = projectId;
+  }
+
+  /**
+   * Set tasks directly (for real-time updates)
+   */
+  setTasks(tasks: Task[]) {
+    this.tasks = tasks;
+  }
+
+  /**
+   * Set completed tasks directly (for real-time updates)
+   */
+  setCompletedTasks(tasks: CompletedTask[]) {
+    this.completedTasks = tasks;
   }
 
   /**
@@ -43,7 +71,10 @@ export class TaskManager {
         console.log('Active tasks result:', tasksResult);
         
         if (tasksResult.success) {
-          this.tasks = tasksResult.tasks || [];
+          const projectId = this.currentProjectId;
+          this.tasks = (tasksResult.tasks || []).filter((task) =>
+            projectId ? task.projectId === projectId : true
+          );
         } else {
           console.error('Failed to load tasks:', tasksResult.error);
         }
@@ -85,8 +116,14 @@ export class TaskManager {
       
       // For each local task, either add it or update it in Firebase
       for (const task of this.tasks) {
+        // Skip tasks that are currently pending an initial add to avoid duplicates
+        if (this.pendingLocalIds.has(task.id)) {
+          console.log('Skipping pending local task during save:', task.id);
+          continue;
+        }
+
         const existingTask = existingTasks.find(t => t.id === task.id);
-        
+
         if (existingTask) {
           // Update existing task
           try {
@@ -96,13 +133,14 @@ export class TaskManager {
             console.error('Error updating task in Firebase:', error);
           }
         } else {
-          // Add new task
+          // Add new task (remove local id before sending)
           try {
-            // Remove the id property before saving (Firebase will generate a new one)
-            const { id, ...taskWithoutId } = task;
+            const { id, ...taskWithoutId } = task as any;
             const result = await addTaskToFirebase(taskWithoutId);
             if (result.success) {
               console.log('Added task to Firebase with ID:', result.id);
+              // Update local task id to server id
+              this.tasks = this.tasks.map(t => t.id === id ? { ...t, id: result.id! } : t);
             } else {
               console.error('Failed to add task to Firebase:', result.error);
             }
@@ -188,36 +226,35 @@ export class TaskManager {
       console.error('No user logged in - cannot add task');
       throw new Error('You must be logged in to add a task');
     }
+
+    if (!this.currentOrgId || !this.currentProjectId) {
+      console.error('No org/project context - cannot add task');
+      throw new Error('Please select an organization and project first');
+    }
     
-    // Create a task with all required fields including userId
-    const newTask: Task = {
-      id: Date.now().toString(), // Temporary ID, will be replaced by Firebase ID
+    const newTask: Omit<Task, 'id'> = {
       title: taskData.title,
       deadline: taskData.deadline,
       subtasks: taskData.subtasks || [],
       done: false,
       createdAt: Date.now(),
-      userId: user.uid // CRITICAL: Include user ID for Firebase queries
+      userId: user.uid,
+      orgId: this.currentOrgId,
+      projectId: this.currentProjectId,
+      reporterId: user.uid,
+      assigneeId: taskData.assigneeId ?? user.uid,
+      priority: taskData.priority ?? 'medium',
+      status: taskData.status ?? 'todo',
+      description: taskData.description ?? '',
     };
     
-    console.log('Creating new task:', newTask);
+    console.log('Creating new project task:', newTask);
     
-    // Add task to local state immediately for instant UI feedback
-    this.tasks = [...this.tasks, newTask];
-    console.log('Task added to local state. New tasks array length:', this.tasks.length);
-    
-    // Save to Firebase in the background (don't wait for it)
-    // This prevents blocking the UI while Firebase responds
-    // IMPORTANT: Keep task in local state even if Firebase fails
-    // The task is already visible to user, Firebase will sync when it works
-    addTaskToFirebase(newTask).then(result => {
+    // Save to Firebase - real-time listener will update local state automatically
+    addProjectTask(this.currentOrgId, this.currentProjectId, newTask).then(result => {
       console.log('Firebase save result:', result);
-      
+
       if (result.success && result.id) {
-        // Update the task ID with the one from Firebase
-        this.tasks = this.tasks.map(task => 
-          task.id === newTask.id ? { ...task, id: result.id! } : task
-        );
         console.log('✅ Task saved to Firebase with ID:', result.id);
       } else {
         console.error('❌ Failed to save task to Firebase:', result.error);
@@ -227,8 +264,6 @@ export class TaskManager {
       }
     }).catch(error => {
       console.error('❌ Error saving task to Firebase:', error);
-      // KEEP task in local state - don't remove it
-      // User can see it locally, will retry on next sync
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.warn(`⚠️ Task created locally but Firebase save failed: ${errorMsg}`);
     });
@@ -237,29 +272,75 @@ export class TaskManager {
   }
 
   /**
-   * Edit existing task
+   * Edit existing task - Uses project path for proper update
    */
   editTask(taskId: string, taskData: TaskFormData): void {
-    this.tasks = this.tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, title: taskData.title, deadline: taskData.deadline, subtasks: taskData.subtasks || task.subtasks }
-        : task
-    );
-    this.saveTasks();
+    if (!this.currentOrgId || !this.currentProjectId) {
+      console.error('Cannot edit task: no org/project context');
+      return;
+    }
+
+    const updates = {
+      title: taskData.title,
+      deadline: taskData.deadline,
+      subtasks: taskData.subtasks,
+      description: taskData.description,
+      assigneeId: taskData.assigneeId,
+      status: taskData.status,
+      priority: taskData.priority,
+    };
+
+    // Update in Firebase - real-time listener will update local state
+    updateProjectTask(this.currentOrgId, this.currentProjectId, taskId, updates)
+      .then(res => {
+        if (res.success) {
+          console.log('✅ Updated task in Firebase:', taskId);
+        } else {
+          console.warn('❌ Failed to update task in Firebase:', res.error);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Error updating task in Firebase:', err);
+      });
   }
 
   /**
-   * Delete task
+   * Delete task - Uses project path for proper deletion
    */
   deleteTask(taskId: string, isInCompletedView: boolean = false): void {
+    if (!this.currentOrgId || !this.currentProjectId) {
+      console.error('Cannot delete task: no org/project context');
+      return;
+    }
+
     if (isInCompletedView) {
-      // For completed tasks, just remove from completed tasks
+      // For completed tasks, remove from local state
       this.completedTasks = this.completedTasks.filter(task => task.id !== taskId);
-      this.saveCompletedTasks();
+      
+      // Delete from project tasks collection
+      deleteProjectTask(this.currentOrgId, this.currentProjectId, taskId).then(res => {
+        if (res.success) {
+          console.log('✅ Deleted completed task from Firebase:', taskId);
+        } else {
+          console.warn('❌ Failed to delete completed task from Firebase:', res.error);
+        }
+      }).catch(err => {
+        console.error('❌ Error deleting completed task from Firebase:', err);
+      });
     } else {
-      // For active tasks, remove from active tasks
+      // For active tasks, remove from local state
       this.tasks = this.tasks.filter(task => task.id !== taskId);
-      this.saveTasks();
+      
+      // Delete from project tasks collection
+      deleteProjectTask(this.currentOrgId, this.currentProjectId, taskId).then(res => {
+        if (res.success) {
+          console.log('✅ Deleted task from Firebase:', taskId);
+        } else {
+          console.warn('❌ Failed to delete task from Firebase:', res.error);
+        }
+      }).catch(err => {
+        console.error('❌ Error deleting task from Firebase:', err);
+      });
     }
     
     // Remove notifications for this task
@@ -269,41 +350,60 @@ export class TaskManager {
   /**
    * Toggle task completion status
    */
-  toggleTaskCompletion(taskId: string): void {
-    const task = this.tasks.find(t => t.id === taskId);
-    if (!task) return;
+  async toggleTaskCompletion(taskId: string): Promise<void> {
+    // Find task in either active or completed list
+    const task = this.tasks.find(t => t.id === taskId) || this.completedTasks.find(t => t.id === taskId);
+    if (!task) {
+      console.error('❌ Task not found:', taskId);
+      return;
+    }
 
     if (!task.done) {
-      // Mark task as done and immediately move to completed
-      const taskToComplete = { ...task, done: true };
-      
-      // Update state immediately without reloading from Firebase
+      // Mark task as done and update in Firebase
       const now = Date.now();
       const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-      const completedTask = {
-        ...taskToComplete,
+      
+      const updates = {
+        done: true,
         completedAt: now,
         expiresAt: now + thirtyDaysInMs
       };
       
-      this.completedTasks = [...this.completedTasks, completedTask];
-      
-      // Remove from active tasks
-      this.tasks = this.tasks.filter(t => t.id !== taskId);
-      
-      // Remove notifications for completed task
-      notificationService.removeNotificationsForTask(taskId);
-      
-      // Save both collections
-      this.saveTasks();
-      this.saveCompletedTasks();
+      // Update in Firebase immediately
+      if (this.currentOrgId && this.currentProjectId) {
+        try {
+          await updateProjectTask(this.currentOrgId, this.currentProjectId, taskId, updates);
+          console.log('✅ Task marked as complete in Firebase:', taskId);
+          
+          // Remove notifications for completed task
+          notificationService.removeNotificationsForTask(taskId);
+          
+          // Note: Real-time listener will automatically update local state
+          // No need to manually update this.tasks or this.completedTasks
+        } catch (error) {
+          console.error('❌ Failed to mark task as complete:', error);
+        }
+      } else {
+        console.error('❌ Cannot complete task: No org/project context');
+      }
     } else {
-      // This case shouldn't happen in normal flow since completed tasks are moved
-      // But keeping it for safety
-      this.tasks = this.tasks.map(t => 
-        t.id === taskId ? { ...t, done: false } : t
-      );
-      this.saveTasks();
+      // Uncomplete task - mark as not done and remove completion timestamps
+      const updates: any = {
+        done: false,
+        completedAt: deleteField(),
+        expiresAt: deleteField()
+      };
+      
+      if (this.currentOrgId && this.currentProjectId) {
+        try {
+          await updateProjectTask(this.currentOrgId, this.currentProjectId, taskId, updates);
+          console.log('✅ Task marked as incomplete in Firebase:', taskId);
+          
+          // Note: Real-time listener will automatically update local state
+        } catch (error) {
+          console.error('❌ Failed to mark task as incomplete:', error);
+        }
+      }
     }
   }
 
